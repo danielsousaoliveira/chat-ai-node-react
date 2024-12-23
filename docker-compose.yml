@@ -1,0 +1,30 @@
+version: "3"
+services:
+    server:
+        build: ./server
+        ports:
+            - "5000:5000"
+        environment:
+            - MONGODB_URI=${MONGODB_URI_DOCKER}
+            - JWT_SECRET=${JWT_SECRET}
+            - OPENAI_API_KEY=${OPENAI_API_KEY}
+            - ENCRYPTION_SECRET_KEY=${ENCRYPTION_SECRET_KEY}
+        depends_on:
+            - mongo
+
+    client:
+        build: ./client
+        ports:
+            - "3000:3000"
+        depends_on:
+            - server
+
+    mongo:
+        image: mongo:latest
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongodb:/data/db
+
+volumes:
+    mongodb:

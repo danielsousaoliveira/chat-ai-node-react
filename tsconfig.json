@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "outDir": "./dist",
+        "rootDir": "./",
+        "strict": true,
+        "esModuleInterop": true
+    },
+    "include": ["server/**/*", "client/postcss.config.js", "client/tailwind.config.js"],
+    "exclude": ["node_modules", "client"]
+}
