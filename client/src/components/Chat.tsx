@@ -159,7 +159,7 @@ const Chat: React.FC = () => {
 
                 {messages.map((message, index) => {
                     const isLastBot = message.sender === "bot" && index === messages.length - 1;
-                    const showCursor = isLastBot && isStreaming;
+                    const showSpinner = isLastBot && isStreaming && !message.content;
 
                     return (
                         <div
@@ -167,10 +167,8 @@ const Chat: React.FC = () => {
                             className={`flex ${message.sender === "user" ? "justify-end animate-fade-right" : "justify-start animate-fade-left"}`}
                         >
                             <div
-                                className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed max-w-[75%] ${showCursor ? "cursor-blink" : ""} ${
-                                    message.sender === "user"
-                                        ? "rounded-br-sm text-white"
-                                        : "rounded-bl-sm"
+                                className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed max-w-[75%] ${
+                                    message.sender === "user" ? "rounded-br-sm text-white" : "rounded-bl-sm"
                                 }`}
                                 style={
                                     message.sender === "user"
@@ -180,9 +178,11 @@ const Chat: React.FC = () => {
                             >
                                 {message.sender === "user" ? (
                                     message.content
+                                ) : showSpinner ? (
+                                    <span className="aria-spinner" />
                                 ) : message.content ? (
                                     <div className="prose-aria"><ReactMarkdown>{message.content}</ReactMarkdown></div>
-                                ) : isStreaming && isLastBot ? null : (
+                                ) : (
                                     <span style={{ color: "var(--text-muted)" }}>—</span>
                                 )}
                             </div>
