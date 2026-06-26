@@ -92,7 +92,8 @@ const Chat: React.FC = () => {
             const decoder = new TextDecoder();
             let buffer = "";
 
-            while (true) {
+            let streamDone = false;
+            while (!streamDone) {
                 const { value, done } = await reader.read();
                 if (done) break;
 
@@ -103,6 +104,7 @@ const Chat: React.FC = () => {
                 for (const line of lines) {
                     if (!line.startsWith("data: ")) continue;
                     const payload = JSON.parse(line.slice(6));
+                    if (payload.done) { streamDone = true; break; }
                     if (payload.token) {
                         setMessages((prev) => {
                             const updated = [...prev];
