@@ -14,7 +14,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         fetchChatHistory();
-    });
+    }, []);
 
     const fetchChatHistory = async () => {
         try {

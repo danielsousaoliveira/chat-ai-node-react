@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
+import OpenAI from "openai";
 import ChatHistory from "../models/ChatHistory";
 import { authenticateToken } from "../authMiddleware";
 import { encryptMessages, decryptMessages } from "../utils/encryption";
-import axios from "axios";
 
 const router = express.Router();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -12,30 +13,25 @@ interface AuthenticatedRequest extends Request {
     };
 }
 
-async function callChatGPT(prompt: string) {
-    const url = "https://api.openai.com/v1/chat/completions";
+type StoredMessage = { content: string; sender: "user" | "bot" };
 
-    const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    };
+async function callChatGPT(history: StoredMessage[]): Promise<string> {
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: "You are a helpful assistant." },
+        ...history.map((m) => ({
+            role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
+            content: m.content,
+        })),
+    ];
 
-    const data = {
-        model: "gpt-3.5-turbo",
-        messages: [
-            { role: "system", content: "You are a helpful assistant." },
-            { role: "user", content: prompt },
-        ],
-    };
+    const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+    });
 
-    try {
-        const response = await axios.post(url, data, { headers });
-        const result = response.data.choices[0].message.content;
-        return result;
-    } catch (error: any) {
-        console.error("Error calling ChatGPT API:", error.response ? error.response.data : error.message);
-        throw error;
-    }
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error("No response from OpenAI");
+    return content;
 }
 
 router.get("/history", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
@@ -71,17 +67,12 @@ router.post("/message", authenticateToken, async (req: AuthenticatedRequest, res
         let chatHistory = await ChatHistory.findOne({ userId: req.user.userId });
         let messages = chatHistory ? decryptMessages(chatHistory.encryptedMessages) : [];
 
-        const userMessage = { content: message, sender: "user" };
+        const userMessage: StoredMessage = { content: message, sender: "user" };
         messages.push(userMessage);
 
-        const botResponse = await callChatGPT(message);
-        //const botResponse = "Hello I am ChatGPT";
+        const botResponse = await callChatGPT(messages);
 
-        if (!botResponse) {
-            throw new Error("No response from OpenAI");
-        }
-
-        const botMessage = { content: botResponse, sender: "bot" };
+        const botMessage: StoredMessage = { content: botResponse, sender: "bot" };
         messages.push(botMessage);
 
         const encryptedMessages = encryptMessages(messages);
