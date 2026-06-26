@@ -1,78 +1,69 @@
-# Chat Application
+# Aria — Self-Hosted AI Chat
 
-This is a full-stack chat application built using Node.js, MongoDB, and React. It provides real-time messaging and user authentication using JWT.
+A self-hosted chat client that connects to any AI model through [OpenRouter](https://openrouter.ai). Runs locally with Docker. Free models available — no monthly subscription required.
 
-## Running Locally
+## Features
 
-### Server Setup
+- Real-time streaming responses
+- Encrypted chat history stored in MongoDB
+- JWT authentication
+- Configurable model — swap providers without touching code
+- Fully containerised — one command to run
 
-1. Navigate to the server directory:
+## Quick Start
 
-    ```
-    cd server
-    ```
+```bash
+# 1. Copy and fill in the environment file
+cp .env.example .env
 
-2. Install dependencies and start the server:
+# 2. Run everything
+docker compose up --build
+```
 
-    ```
-    npm install
-    npm run dev
-    ```
-
-3. The server will be running on `http://localhost:5000`.
-
-### Client Setup
-
-1. Navigate to the client directory:
-
-    ```
-    cd client
-    ```
-
-2. Install dependencies and start the client:
-
-    ```
-    npm install
-    npm start
-    ```
-
-3. Open your browser and navigate to `http://localhost:3000`.
-
----
-
-## Running with Docker
-
-1. Clone the repository:
-
-    ```
-    git clone <repository-url>
-    cd <repository-folder>
-    ```
-
-2. Build and start the Docker containers:
-
-    ```
-    docker-compose up --build
-    ```
-
-3. The client will be available at `http://localhost:3000`, and the server at `http://localhost:5000`.
-
----
+Open `http://localhost:3000`.
 
 ## Environment Variables
 
-Create a `.env` file insider server folder:
+| Variable | Description | Default |
+|---|---|---|
+| `MONGODB_URI_DOCKER` | MongoDB connection string (inside Docker) | `mongodb://mongo:27017/chat-ai` |
+| `JWT_SECRET` | Secret used to sign auth tokens | — |
+| `ENCRYPTION_SECRET_KEY` | 32-character key for message encryption | — |
+| `OPENROUTER_API_KEY` | Your [OpenRouter](https://openrouter.ai/keys) API key | — |
+| `OPENROUTER_MODEL` | Model to use (e.g. `openai/gpt-4o-mini`) | `openai/gpt-4o-mini` |
+| `SERVER_PORT` | Host port mapped to the server | `5000` |
+| `VITE_API_URL` | API URL baked into the client build | `http://localhost:5000` |
 
-    ```
-    touch .env
-    ```
+Free models on OpenRouter: `meta-llama/llama-3.1-8b-instruct:free`, `google/gemma-3-27b-it:free`, `deepseek/deepseek-r1:free`.
 
-    Add the following variables:
+## Manual Setup
 
-    ```
-    MONGODB_URI=mongodb://localhost:27017/your_db
-    JWT_SECRET=your_secret_key
-    PORT=5000
-    ENCRYPTION_SECRET_KEY=your_key
+**Server**
+```bash
+cd server
+cp .env.example .env   # fill in values
+npm install
+npm run dev
+```
 
-    ```
+**Client**
+```bash
+cd client
+cp .env.example .env   # set VITE_API_URL
+npm install
+npm run dev
+```
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS |
+| Backend | Node.js, Express, TypeScript |
+| Database | MongoDB via Mongoose |
+| Auth | JWT + bcrypt |
+| AI | OpenRouter API (OpenAI-compatible) |
+
+## License
+
+MIT
