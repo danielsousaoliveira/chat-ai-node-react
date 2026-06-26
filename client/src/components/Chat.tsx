@@ -17,14 +17,6 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchChatHistory();
-    }, []);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, sending]);
-
     const handleAuthError = (err: unknown) => {
         if (axios.isAxiosError(err) && err.response?.status === 403) {
             localStorage.removeItem("token");
@@ -32,17 +24,24 @@ const Chat: React.FC = () => {
         }
     };
 
-    const fetchChatHistory = async () => {
-        try {
-            const response = await axios.get<Message[]>(`${API_BASE}/api/chat/history`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            });
-            setMessages(response.data);
-        } catch (err) {
-            console.error("Failed to fetch chat history", err);
-            handleAuthError(err);
-        }
-    };
+    useEffect(() => {
+        const fetchChatHistory = async () => {
+            try {
+                const response = await axios.get<Message[]>(`${API_BASE}/api/chat/history`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                });
+                setMessages(response.data);
+            } catch (err) {
+                console.error("Failed to fetch chat history", err);
+                handleAuthError(err);
+            }
+        };
+        fetchChatHistory();
+    }, []);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, sending]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
