@@ -53,6 +53,10 @@ const Chat: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, sending]);
 
+    useEffect(() => {
+        if (!sending) inputRef.current?.focus();
+    }, [sending]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || sending) return;
@@ -117,7 +121,6 @@ const Chat: React.FC = () => {
             setError("Failed to get a response. Please try again.");
         } finally {
             setSending(false);
-            inputRef.current?.focus();
         }
     };
 

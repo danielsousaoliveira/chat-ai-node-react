@@ -10,6 +10,12 @@ A self-hosted chat client that connects to any AI model through [OpenRouter](htt
 - Configurable model — swap providers without touching code
 - Fully containerised — one command to run
 
+## Screenshots
+
+| Login | Chat |
+|---|---|
+| ![Login](docs/screenshots/login.png) | ![Chat](docs/screenshots/chat.png) |
+
 ## Quick Start
 
 ```bash
@@ -34,7 +40,7 @@ Open `http://localhost:3000`.
 | `SERVER_PORT` | Host port mapped to the server | `5000` |
 | `VITE_API_URL` | API URL baked into the client build | `http://localhost:5000` |
 
-Free models on OpenRouter: `meta-llama/llama-3.1-8b-instruct:free`, `google/gemma-3-27b-it:free`, `deepseek/deepseek-r1:free`.
+Browse [free models on OpenRouter](https://openrouter.ai/collections/free-models).
 
 ## Manual Setup
 
