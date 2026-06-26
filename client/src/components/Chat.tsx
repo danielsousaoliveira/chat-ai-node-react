@@ -54,17 +54,59 @@ const Chat: React.FC = () => {
         setError("");
         setSending(true);
 
+        // Add an empty bot message that we'll stream tokens into
+        setMessages((prev) => [...prev, { content: "", sender: "bot" }]);
+
         try {
-            const response = await axios.post<{ response: string }>(
-                `${API_BASE}/api/chat/message`,
-                { message: userMessage.content },
-                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-            );
-            const botMessage: Message = { content: response.data.response, sender: "bot" };
-            setMessages((prev) => [...prev, botMessage]);
+            const response = await fetch(`${API_BASE}/api/chat/message`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({ message: userMessage.content }),
+            });
+
+            if (!response.ok || !response.body) {
+                if (response.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                    return;
+                }
+                throw new Error("Bad response");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    const payload = JSON.parse(line.slice(6));
+                    if (payload.token) {
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[updated.length - 1] = {
+                                content: updated[updated.length - 1].content + payload.token,
+                                sender: "bot",
+                            };
+                            return updated;
+                        });
+                    }
+                }
+            }
         } catch (err) {
             console.error("Failed to send message", err);
             handleAuthError(err);
+            setMessages((prev) => prev.slice(0, -1)); // remove empty bot placeholder
             setError("Failed to get a response. Please try again.");
         } finally {
             setSending(false);
@@ -92,17 +134,10 @@ const Chat: React.FC = () => {
                                 message.sender === "user" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
                             }`}
                         >
-                            {message.content}
+                            {message.content || <span className="animate-pulse">...</span>}
                         </div>
                     </div>
                 ))}
-                {sending && (
-                    <div className="flex justify-start">
-                        <div className="bg-gray-200 text-black px-4 py-2 rounded-lg max-w-xs">
-                            <span className="animate-pulse">...</span>
-                        </div>
-                    </div>
-                )}
                 {error && (
                     <div className="flex justify-center">
                         <p className="text-red-500 text-sm">{error}</p>

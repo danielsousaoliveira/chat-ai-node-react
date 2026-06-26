@@ -15,23 +15,14 @@ interface AuthenticatedRequest extends Request {
 
 type StoredMessage = { content: string; sender: "user" | "bot" };
 
-async function callChatGPT(history: StoredMessage[]): Promise<string> {
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+function buildMessages(history: StoredMessage[]): OpenAI.Chat.ChatCompletionMessageParam[] {
+    return [
         { role: "system", content: "You are a helpful assistant." },
         ...history.map((m) => ({
             role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
             content: m.content,
         })),
     ];
-
-    const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages,
-    });
-
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error("No response from OpenAI");
-    return content;
 }
 
 router.get("/history", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
@@ -65,33 +56,55 @@ router.post("/message", authenticateToken, async (req: AuthenticatedRequest, res
         }
 
         let chatHistory = await ChatHistory.findOne({ userId: req.user.userId });
-        let messages = chatHistory ? decryptMessages(chatHistory.encryptedMessages) : [];
+        let messages: StoredMessage[] = chatHistory ? decryptMessages(chatHistory.encryptedMessages) : [];
 
         const userMessage: StoredMessage = { content: message, sender: "user" };
         messages.push(userMessage);
 
-        const botResponse = await callChatGPT(messages);
+        // SSE headers
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders();
 
+        const stream = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: buildMessages(messages),
+            stream: true,
+        });
+
+        let botResponse = "";
+        for await (const chunk of stream) {
+            const token = chunk.choices[0]?.delta?.content ?? "";
+            if (token) {
+                botResponse += token;
+                res.write(`data: ${JSON.stringify({ token })}\n\n`);
+            }
+        }
+
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+
+        // Persist the complete exchange
         const botMessage: StoredMessage = { content: botResponse, sender: "bot" };
         messages.push(botMessage);
-
         const encryptedMessages = encryptMessages(messages);
 
         if (chatHistory) {
             chatHistory.encryptedMessages = encryptedMessages;
             await chatHistory.save();
         } else {
-            chatHistory = new ChatHistory({
-                userId: req.user.userId,
-                encryptedMessages,
-            });
+            chatHistory = new ChatHistory({ userId: req.user.userId, encryptedMessages });
             await chatHistory.save();
         }
-
-        res.json({ response: botResponse });
     } catch (error) {
         console.error("Error processing message:", error);
-        res.status(500).json({ error: "Failed to process message" });
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Failed to process message" });
+        } else {
+            res.write(`data: ${JSON.stringify({ error: "Stream interrupted" })}\n\n`);
+            res.end();
+        }
     }
 });
 
