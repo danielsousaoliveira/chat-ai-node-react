@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
+const API_BASE = process.env.REACT_APP_API_URL ?? "http://localhost:5000";
+
 const Register: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -11,7 +13,7 @@ const Register: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await axios.post("http://localhost:5000/api/auth/register", { email, password });
+            await axios.post(`${API_BASE}/api/auth/register`, { email, password });
             navigate("/login");
         } catch (error) {
             console.error("Registration failed", error);

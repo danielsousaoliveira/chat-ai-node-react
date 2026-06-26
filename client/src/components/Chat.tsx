@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE = process.env.REACT_APP_API_URL ?? "http://localhost:5000";
+
 type Message = {
     content: string;
     sender: "user" | "bot";
@@ -18,7 +20,7 @@ const Chat: React.FC = () => {
 
     const fetchChatHistory = async () => {
         try {
-            const response = await axios.get<Message[]>("http://localhost:5000/api/chat/history", {
+            const response = await axios.get<Message[]>(`${API_BASE}/api/chat/history`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             });
             setMessages(response.data);
@@ -41,7 +43,7 @@ const Chat: React.FC = () => {
 
         try {
             const response = await axios.post<{ response: string }>(
-                "http://localhost:5000/api/chat/message",
+                `${API_BASE}/api/chat/message`,
                 { message: input },
                 { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             );
