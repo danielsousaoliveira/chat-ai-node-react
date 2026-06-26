@@ -20,7 +20,14 @@ type StoredMessage = { content: string; sender: "user" | "bot" };
 
 function buildMessages(history: StoredMessage[]): OpenAI.Chat.ChatCompletionMessageParam[] {
     return [
-        { role: "system", content: "You are a helpful assistant." },
+        {
+            role: "system",
+            content:
+                "You are Aria, a sharp and concise AI assistant. " +
+                "Always identify yourself as Aria if asked. " +
+                "Never claim to be any other model or assistant. " +
+                "Format responses using markdown where it adds clarity: use **bold** for emphasis, ` ` for inline code, code blocks for multi-line code, and bullet lists where appropriate. Keep prose tight.",
+        },
         ...history.map((m) => ({
             role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
             content: m.content,

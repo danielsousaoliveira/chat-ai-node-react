@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
@@ -177,7 +178,13 @@ const Chat: React.FC = () => {
                                         : { background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)" }
                                 }
                             >
-                                {message.content || (isStreaming && isLastBot ? "" : <span style={{ color: "var(--text-muted)" }}>—</span>)}
+                                {message.sender === "user" ? (
+                                    message.content
+                                ) : message.content ? (
+                                    <div className="prose-aria"><ReactMarkdown>{message.content}</ReactMarkdown></div>
+                                ) : isStreaming && isLastBot ? null : (
+                                    <span style={{ color: "var(--text-muted)" }}>—</span>
+                                )}
                             </div>
                         </div>
                     );
