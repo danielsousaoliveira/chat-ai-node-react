@@ -21,7 +21,7 @@ export default [
             ...tseslint.configs.recommended.rules,
             ...reactHooks.configs.recommended.rules,
             "@typescript-eslint/no-explicit-any": "warn",
-            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
             "react/react-in-jsx-scope": "off",
         },
     },

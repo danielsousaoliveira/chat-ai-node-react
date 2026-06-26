@@ -9,12 +9,19 @@ type Message = {
     sender: "user" | "bot";
 };
 
+const SendIcon: React.FC = () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 8L2 2l2.5 6L2 14l12-6z" fill="currentColor" />
+    </svg>
+);
+
 const Chat: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
     const handleAuthError = (err: unknown) => {
@@ -33,15 +40,22 @@ const Chat: React.FC = () => {
                 setMessages(response.data);
             } catch (err) {
                 console.error("Failed to fetch chat history", err);
-                handleAuthError(err);
+                if (axios.isAxiosError(err) && err.response?.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                }
             }
         };
         fetchChatHistory();
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, sending]);
+
+    useEffect(() => {
+        if (!sending) inputRef.current?.focus();
+    }, [sending]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,8 +66,6 @@ const Chat: React.FC = () => {
         setInput("");
         setError("");
         setSending(true);
-
-        // Add an empty bot message that we'll stream tokens into
         setMessages((prev) => [...prev, { content: "", sender: "bot" }]);
 
         try {
@@ -105,7 +117,7 @@ const Chat: React.FC = () => {
         } catch (err) {
             console.error("Failed to send message", err);
             handleAuthError(err);
-            setMessages((prev) => prev.slice(0, -1)); // remove empty bot placeholder
+            setMessages((prev) => prev.slice(0, -1));
             setError("Failed to get a response. Please try again.");
         } finally {
             setSending(false);
@@ -117,48 +129,94 @@ const Chat: React.FC = () => {
         navigate("/login");
     };
 
+    const isStreaming = sending && messages.length > 0 && messages[messages.length - 1].sender === "bot";
+
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
-            <div className="bg-white shadow-md p-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Chat</h1>
-                <button onClick={handleLogout} className="btn btn-secondary">
-                    Log out
+        <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+            {/* Header */}
+            <header
+                className="flex items-center justify-between px-5 py-3 shrink-0"
+                style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+            >
+                <span className="text-sm font-bold uppercase" style={{ color: "var(--text)", letterSpacing: "0.2em" }}>
+                    ARI<span style={{ color: "var(--accent)" }}>A</span>
+                </span>
+                <button onClick={handleLogout} className="btn btn-ghost">
+                    Sign out
                 </button>
-            </div>
-            <div className="flex-grow overflow-y-auto p-4 space-y-4">
-                {messages.map((message, index) => (
-                    <div key={index} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+            </header>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3">
+                {messages.length === 0 && !sending && (
+                    <div className="flex items-center justify-center h-full" style={{ minHeight: "200px" }}>
+                        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                            Send a message to get started
+                        </p>
+                    </div>
+                )}
+
+                {messages.map((message, index) => {
+                    const isLastBot = message.sender === "bot" && index === messages.length - 1;
+                    const showCursor = isLastBot && isStreaming;
+
+                    return (
                         <div
-                            className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg ${
-                                message.sender === "user" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
-                            }`}
+                            key={index}
+                            className={`flex ${message.sender === "user" ? "justify-end animate-fade-right" : "justify-start animate-fade-left"}`}
                         >
-                            {message.content || <span className="animate-pulse">...</span>}
+                            <div
+                                className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed max-w-[75%] ${showCursor ? "cursor-blink" : ""} ${
+                                    message.sender === "user"
+                                        ? "rounded-br-sm text-white"
+                                        : "rounded-bl-sm"
+                                }`}
+                                style={
+                                    message.sender === "user"
+                                        ? { background: "var(--accent)" }
+                                        : { background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)" }
+                                }
+                            >
+                                {message.content || (isStreaming && isLastBot ? "" : <span style={{ color: "var(--text-muted)" }}>—</span>)}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
+
                 {error && (
-                    <div className="flex justify-center">
-                        <p className="text-red-500 text-sm">{error}</p>
-                    </div>
+                    <p className="text-center text-xs" style={{ color: "#f87171" }}>
+                        {error}
+                    </p>
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSubmit} className="bg-white p-4 border-t">
-                <div className="flex space-x-2">
+
+            {/* Input bar */}
+            <div
+                className="shrink-0 px-4 py-3"
+                style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}
+            >
+                <form onSubmit={handleSubmit} className="flex items-center gap-2 max-w-3xl mx-auto">
                     <input
+                        ref={inputRef}
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        className="input flex-grow"
-                        placeholder="Type a message..."
+                        className="input flex-1"
+                        placeholder="Message Aria..."
                         disabled={sending}
+                        autoComplete="off"
                     />
-                    <button type="submit" className="btn btn-primary" disabled={sending || !input.trim()}>
-                        Send
+                    <button
+                        type="submit"
+                        className="btn btn-primary shrink-0"
+                        disabled={sending || !input.trim()}
+                        style={{ padding: "0.625rem 0.875rem" }}
+                    >
+                        <SendIcon />
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     );
 };
