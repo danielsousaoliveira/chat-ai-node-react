@@ -40,11 +40,14 @@ const Chat: React.FC = () => {
                 setMessages(response.data);
             } catch (err) {
                 console.error("Failed to fetch chat history", err);
-                handleAuthError(err);
+                if (axios.isAxiosError(err) && err.response?.status === 403) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                }
             }
         };
         fetchChatHistory();
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -132,8 +135,8 @@ const Chat: React.FC = () => {
                 className="flex items-center justify-between px-5 py-3 shrink-0"
                 style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
             >
-                <span className="text-sm font-semibold tracking-tight" style={{ color: "var(--text)" }}>
-                    aria
+                <span className="text-sm font-bold uppercase" style={{ color: "var(--text)", letterSpacing: "0.2em" }}>
+                    ARI<span style={{ color: "var(--accent)" }}>A</span>
                 </span>
                 <button onClick={handleLogout} className="btn btn-ghost">
                     Sign out

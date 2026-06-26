@@ -29,8 +29,8 @@ const Register: React.FC = () => {
             <div className="w-full max-w-sm px-4">
                 <div className="animate-slide-up">
                     <div className="mb-8 text-center">
-                        <span className="text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
-                            aria
+                        <span className="text-2xl font-bold uppercase" style={{ color: "var(--text)", letterSpacing: "0.2em" }}>
+                            ARI<span style={{ color: "var(--accent)" }}>A</span>
                         </span>
                     </div>
 
