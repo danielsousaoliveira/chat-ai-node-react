@@ -90,10 +90,12 @@ router.post("/message", authenticateToken, async (req: AuthenticatedRequest, res
                 botResponse += token;
                 res.write(`data: ${JSON.stringify({ token })}\n\n`);
             }
+            if (chunk.choices[0]?.finish_reason) {
+                res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+                res.end();
+                break;
+            }
         }
-
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-        res.end();
 
         // Persist the complete exchange
         const botMessage: StoredMessage = { content: botResponse, sender: "bot" };

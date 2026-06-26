@@ -181,7 +181,7 @@ const Chat: React.FC = () => {
                                 {message.sender === "user" ? (
                                     message.content
                                 ) : showSpinner ? (
-                                    <span className="aria-spinner" />
+                                    <span className="aria-spinner"><span /><span /><span /></span>
                                 ) : message.content ? (
                                     <div className="prose-aria"><ReactMarkdown>{message.content}</ReactMarkdown></div>
                                 ) : (
